@@ -6,6 +6,87 @@ import re
 
 AUTOSAVE_INTERVAL = 300 # in seconds
 
+class BetterText(tk.Text):
+    def __init__(self, parent, *args, **kwargs):
+        tk.Text.__init__(self, parent, *args, **kwargs)
+
+
+        # Undo/Redo
+        # changes saves a copy of every altered version of your document
+        self.changes = ['']
+        # steps saves the current step in undo time
+        self.steps = int()
+        # binding the apropriate Controls to undo and redo
+        self.bind('<Control-z>', self.undo)
+        self.bind('<Control-y>', self.redo)
+        # adding to changes list, when the text is altered, i.e. a button is pressed 
+        self.bind('<Key>', self.add_changes)
+
+        # Markdown shortcuts
+        self.bind('<Control-i>', self.italicText) # italizes text 
+        self.bind('<Control-b>', self.boldText) # bold(s)? text
+        self.bind('<Control-u>', self.underlinedText) # underlines text
+        self.bind('<Control-h>', self.highlightText) # highlight text
+
+#TODO: add markdown shortcut stuff (Ctrl+I -> *word*)
+#TODO: add Ctrl + Backspace entire word removal.
+
+    def undo(self, event=None):
+        if self.steps != 0:
+            self.steps -= 1
+            self.delete('1.0','end')
+            self.insert('end', self.changes[self.steps])
+
+    def redo(self, event=None):
+        if self.steps < len(self.changes):
+            self.delete('1.0','end')
+            self.insert('end', self.changes[self.steps])
+            self.steps += 1
+
+    def add_changes(self, event=None):
+        if self.get('1.0','end') != self.changes[-1]:
+            self.changes.append(self.get('1.0','end'))
+            self.steps += 1
+
+    def postItalicText(self, event=None):
+        # delete last typed character (tab)
+        cursorPos = self.index(tk.INSERT)
+        self.delete(f'{cursorPos} - 1 chars', cursorPos)
+
+    def italicText(self, event=None): # *italic*
+        # italize text
+        self.markText(SYNTAX_FRONT='*', SYNTAX_BACK='*')
+        self.after(1, self.postItalicText)
+        # Ctrl+I is interpreted as Tab; to circumvent this a function is called 1 ms after the text has been marked that instantly deletes the tab again; this only works, because the Tab is always send after the function call
+        
+    def boldText(self, event=None): # **bold**
+        self.markText(SYNTAX_FRONT='**', SYNTAX_BACK='**')
+
+    def underlinedText(self, event=None): # <u>underline</u>
+        self.markText(SYNTAX_FRONT='<u>', SYNTAX_BACK='</u>')
+
+    def highlightText(self, event=None): # ==highlight==
+        self.markText(SYNTAX_FRONT='==', SYNTAX_BACK='==')
+
+    def markText(self, SYNTAX_FRONT='*', SYNTAX_BACK='*'):
+        if self.tag_ranges('sel'):
+            selection = self.selection_get()
+            selection = f'{SYNTAX_FRONT}{selection}{SYNTAX_BACK}'
+            self.insert(self.tag_ranges('sel')[1], selection)
+            self.delete(self.tag_ranges('sel')[0], self.tag_ranges('sel')[1])
+            self.tag_remove('sel', '1.0', 'end')
+        else:
+            cursorPos = self.index(tk.INSERT)
+            self.insert(cursorPos, f'{SYNTAX_FRONT}{SYNTAX_BACK}')
+            self.mark_set('insert', self.calcCursorMove(move=-(len(SYNTAX_BACK)), position=self.index(tk.INSERT))) # applies new position (inside Syntax) to cursor
+
+
+    def calcCursorMove(self, move=-1, position='1.0'): # calculates the new position the text cursor should have when moved by a given value to the left (negative int) or the right (positive int); starting from a given position
+        cursorPos = position.split('.') # splits the given cursor position into a line string [0] and a char string [1]
+        cursorPos[1] = str(int(cursorPos[1]) + move) # modifies the char position
+        cursorPos = '' + str(cursorPos[0]) + '.' + str(cursorPos[1]) # applies the needed position format: 'line.char' to cursorPos variable
+        return cursorPos
+
 class Writer(): # a tkinter window for distraction-free writing
     def __init__(self, blockStyle=1, blockValue=1, fileLocation='test.md') -> None:
 
@@ -51,7 +132,7 @@ class Writer(): # a tkinter window for distraction-free writing
         else: self.label = tk.Label(self.root, text="So you are the kind of person to use a distraction-free writing software without using the features that make the software distraction-free? Interesting decision...\n...\n...\n...\n Just out of interest, you do realize that without the distraction-free features this piece of software is just barely, if at all, better than the MS Editor, do you?").pack(padx=20, pady=20)
 
         # the input box for your text, quite literally the most obvious (& important) part
-        self.textbox = tk.Text(self.root, wrap='word', font=('Times New Roman', 16), width=90)
+        self.textbox = BetterText(self.root, wrap='word', font=('Times New Roman', 16), width=90)
         self.textbox.pack(fill=tk.Y, expand=True)
         self.loadTextToTBox()
 
@@ -102,10 +183,9 @@ class Writer(): # a tkinter window for distraction-free writing
     def enableQuit(self):
         self.quitButton.config(state= 'normal')
 
-#TODO: add Ctrl + Backspace entire word removal.
 #TODO: stylize the progress bar; it honestly doesn't really look good rn
-#TODO: add markdown shortcut stuff (Ctrl+I -> *word*)
 #TODO: deactivate other monitors
+#TODO: undo/redo
 
 class WriterStartup():
     def __init__(self) -> None:
@@ -185,5 +265,11 @@ class WriterStartup():
         self.root.destroy()
 
 if __name__ == '__main__':
-    #Writer().run()
-    WriterStartup()
+    #Writer(blockStyle=0).run()
+    #WriterStartup()
+    root = tk.Tk()
+
+    text = BetterText(root, wrap='word', font=('Times New Roman', 16), width=90)
+    text.pack()
+
+    root.mainloop()

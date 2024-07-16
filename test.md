@@ -4,12 +4,6 @@ Do you know what I would like? No, you don't, because how could you. I would lik
 
 I'm sorry, what are you doing exactly, Mr. SpielMitStil?
 
+I like writing stuff and I am honestly not quite sure, why I like writing stuff.
 
-
-
-
-
-
-
-
-
+**𝔹𝕠𝕝𝕕**
