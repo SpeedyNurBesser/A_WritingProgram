@@ -164,12 +164,16 @@ class Writer(): # a tkinter window for distraction-free writing
         # either displays a progressBar and a disabled quit button or a weird useless label
         if self.blockSytle != 0:
             # displays the user's writing progress (time passed / words typed) in percentage points
-            self.progressBar = ttk.Progressbar(self.root, orient='horizontal', length=1000, mode='determinate', maximum=1)
+            self.progressBar = ttk.Progressbar(self.root, orient='horizontal', length=300, mode='determinate', maximum=1)
+            s = ttk.Style(self.progressBar)
+            s.theme_use('alt')
             self.progressBar.pack(padx=20, pady=(25, 5))
+
+            # adds QuitButton
             self.quitButton = tk.Button(self.root, text='Save & Exit', command=self.SaveAndExit, state='disabled', border=0)
             self.quitButton.pack(padx=20, pady=(0, 50))
-
-        else: self.label = tk.Label(self.root, text="So you are the kind of person to use a distraction-free writing software without using the features that make the software distraction-free? Interesting decision...\n...\n...\n...\n Just out of interest, you do realize that without the distraction-free features this piece of software is just barely, if at all, better than the MS Editor, do you?").pack(padx=20, pady=20)
+        else: 
+            self.label = tk.Label(self.root, text="So you are the kind of person to use a distraction-free writing software without using the features that make the software distraction-free? Interesting decision...\n...\n...\n...\n Just out of interest, you do realize that without the distraction-free features this piece of software is just barely, if at all, better than the MS Editor, do you?").pack(padx=20, pady=20)
 
         # the input box for your text, quite literally the most obvious (& important) part
         self.textbox = BetterText(self.root, wrap='word', font=('Times New Roman', 16), width=90)
@@ -223,9 +227,7 @@ class Writer(): # a tkinter window for distraction-free writing
     def enableQuit(self):
         self.quitButton.config(state= 'normal')
 
-#TODO: stylize the progress bar; it honestly doesn't really look good rn
 #TODO: deactivate other monitors
-#TODO: add error to writer startup, if no file is selected
 
 class WriterStartup():
     def __init__(self) -> None:
@@ -309,7 +311,7 @@ class WriterStartup():
         
 
 if __name__ == '__main__':
-    #Writer(blockStyle=0).run()
+    #Writer(blockStyle=1).run()
     WriterStartup()
     #root = tk.Tk()
 
