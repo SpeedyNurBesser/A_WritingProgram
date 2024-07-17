@@ -58,7 +58,6 @@ class BetterText(tk.Text):
             self.changes.append(self.get('1.0','end'))
             self.steps += 1
 
-
     # markdown shortcuts
     def postItalicText(self, event=None):
         # delete last typed character (tab) (for explanation see italicText method)
@@ -241,7 +240,7 @@ class WriterStartup():
         self.fileLabel = tk.Label(fileFrame, text='You need to select a file beforehand; create one now, if you start anew: ')
         self.fileLabel.pack(pady=20, side='left')
 
-        self.filename = 'test.md'
+        self.filename = ''
 
         selectFileButton = tk.Button(fileFrame, text='Browse', command= self.selectFile)
         selectFileButton.pack(pady=20, side='left')
@@ -298,12 +297,16 @@ class WriterStartup():
             filetypes= filetypes
         ).name
 
-        self.fileLabel.config(text=self.filename)
+        self.fileLabel.config(text=self.filename, fg='#000000')
 
     def startWriter(self):
-        writer = Writer(fileLocation= self.filename, blockStyle= int(self.blockStyle.get()), blockValue= int(self.blockValue.get()))
-        writer.run()
-        self.root.destroy()
+        if self.filename != '':
+            writer = Writer(fileLocation= self.filename, blockStyle= int(self.blockStyle.get()), blockValue= int(self.blockValue.get()))
+            writer.run()
+            self.root.destroy()
+        else:
+            self.fileLabel.config(text='You need to select a file!', fg='#ff3333')
+        
 
 if __name__ == '__main__':
     #Writer(blockStyle=0).run()
