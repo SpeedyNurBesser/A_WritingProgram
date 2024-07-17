@@ -24,8 +24,21 @@ class BetterText(tk.Text):
         self.bind('<Control-b>', self.boldText) # bold(s)? text -> prints text in bold
         self.bind('<Control-u>', self.underlinedText) # underlines text
 
+        # Word Removal:
+        # Delete word to the left of cursor (Ctrl + BackSpace)
+        # Delete word to the right of cursor (Ctrl + Delete)
+        self.bind('<Control-BackSpace>', self.wordRemovalLeft)
+        self.bind('<Control-Delete>', self.wordRemovalRight)
 
-#TODO: add Ctrl + Backspace entire word removal.
+    # Word Removal
+    def wordRemovalLeft(self, event=None):
+        cursorPos = self.index(tk.INSERT)
+        self.delete(f'{cursorPos} - 1 chars wordstart', cursorPos)
+        self.insert(cursorPos, ' ') # inserts a space, as the regular backSpace still triggers
+
+    def wordRemovalRight(self, event=None):
+        cursorPos = self.index(tk.INSERT)
+        self.delete(cursorPos, f'{self.index(f'{cursorPos} wordend')} - 1 chars') # removes one char, as the regular del key still fires
 
     # Undo/Redo
     def undo(self, event=None):
@@ -213,6 +226,7 @@ class Writer(): # a tkinter window for distraction-free writing
 
 #TODO: stylize the progress bar; it honestly doesn't really look good rn
 #TODO: deactivate other monitors
+#TODO: add error to writer startup, if no file is selected
 
 class WriterStartup():
     def __init__(self) -> None:
@@ -224,7 +238,7 @@ class WriterStartup():
         # You need to select a file beforehand, create one, if you start anew: File Selection
         fileFrame = tk.Frame(self.root)
 
-        self.fileLabel = tk.Label(fileFrame, text='You need to select a file beforehand; create one, if you start anew: ')
+        self.fileLabel = tk.Label(fileFrame, text='You need to select a file beforehand; create one now, if you start anew: ')
         self.fileLabel.pack(pady=20, side='left')
 
         self.filename = 'test.md'
@@ -293,13 +307,13 @@ class WriterStartup():
 
 if __name__ == '__main__':
     #Writer(blockStyle=0).run()
-    #WriterStartup()
-    root = tk.Tk()
+    WriterStartup()
+    #root = tk.Tk()
 
-    root.geometry('500x300')
+    #root.geometry('500x300')
     
 
-    text = BetterText(root, wrap='word', font=('Times New Roman', 16), width=90)
-    text.pack()
+    #text = BetterText(root, wrap='word', font=('Times New Roman', 16), width=90)
+    #text.pack()
 
-    root.mainloop()
+    #root.mainloop()
