@@ -10,17 +10,13 @@ class BetterText(tk.Text):
     def __init__(self, parent, *args, **kwargs):
         tk.Text.__init__(self, parent, *args, **kwargs)
 
-
         # Undo/Redo
-        # changes saves a copy of every altered version of your document
-        self.changes = ['']
-        # steps saves the current step in undo time
-        self.steps = int()
+        self.changes = [''] # changes saves a copy of every altered version of your document
+        self.steps = int() # steps saves the current step in undo time
         # binding the apropriate Controls to undo and redo
         self.bind('<Control-z>', self.undo)
         self.bind('<Control-y>', self.redo)
-        # adding to changes list, when the text is altered, i.e. a button is pressed 
-        self.bind('<Key>', self.add_changes)
+        self.bind('<Key>', self.add_changes) # every time a button is pressed, i.e. the text is altered, a new copy of text is saved in changes
 
 
         # Markdown shortcuts
@@ -117,14 +113,7 @@ class BetterText(tk.Text):
         else:
             cursorPos = self.index(tk.INSERT)
             self.insert(cursorPos, f'{SYNTAX_FRONT}{SYNTAX_BACK}')
-            self.mark_set('insert', self.calcCursorMove(move=-(len(SYNTAX_BACK)), position=self.index(tk.INSERT))) # applies new position (inside Syntax) to cursor
-
-
-    def calcCursorMove(self, move=-1, position='1.0'): # calculates the new position the text cursor should have when moved by a given move-value to the left (negative int) or the right (positive int); starting from a given position
-        cursorPos = position.split('.') # splits the given cursor position into a line string [0] and a char string [1]
-        cursorPos[1] = str(int(cursorPos[1]) + move) # modifies the char position
-        cursorPos = '' + str(cursorPos[0]) + '.' + str(cursorPos[1]) # applies the needed position format: 'line.char' to cursorPos variable
-        return cursorPos
+            self.mark_set('insert', f'{self.index(tk.INSERT)} - {len(SYNTAX_BACK)} chars') # applies new position (between front and back Syntax) to cursor
 
 class Writer(): # a tkinter window for distraction-free writing
     def __init__(self, blockStyle=1, blockValue=1, fileLocation='test.md') -> None:
