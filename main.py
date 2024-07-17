@@ -38,7 +38,7 @@ class BetterText(tk.Text):
 
     def wordRemovalRight(self, event=None):
         cursorPos = self.index(tk.INSERT)
-        self.delete(cursorPos, f'{self.index(f'{cursorPos} wordend')} - 1 chars') # removes one char, as the regular del key still fires
+        self.delete(cursorPos, f"{self.index(f'{cursorPos} wordend')} - 1 chars") # removes one char, as the regular del key still fires
 
     # Undo/Redo
     def undo(self, event=None):
