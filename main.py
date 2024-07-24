@@ -5,6 +5,7 @@ from tkinter import messagebox as mb
 import re
 
 AUTOSAVE_INTERVAL = 300 # in seconds
+AUTOSAVE_INTERVAL = 300 * 1000
 
 class BetterText(tk.Text):
     def __init__(self, parent, *args, **kwargs):
@@ -194,12 +195,12 @@ class Writer(): # a tkinter window for distraction-free writing
 
     def autoSave(self):
         self.saveTextToFile()
-        self.root.after(AUTOSAVE_INTERVAL*1000, self.autoSave)
+        self.root.after(AUTOSAVE_INTERVAL, self.autoSave)
 
     def run(self):
         if self.blockSytle == 1: self.root.after(1000, self.updateTimeBar)
         elif self.blockSytle == 2: self.root.after(1000, self.updateWordBar)
-        self.root.after(AUTOSAVE_INTERVAL*1000, self.autoSave)
+        self.root.after(AUTOSAVE_INTERVAL, self.autoSave)
         self.root.mainloop()
 
     def updateTimeBar(self):
