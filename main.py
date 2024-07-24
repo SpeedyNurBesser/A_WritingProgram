@@ -284,7 +284,6 @@ class WriterStartup():
         self.blockStyle.set(1)
 
         checkBoxFrame.pack()
-        ###
 
         startButton = tk.Button(self.root, text='Start', command= self.startWriter)
         startButton.pack(pady=20)
