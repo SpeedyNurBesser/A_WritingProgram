@@ -148,7 +148,7 @@ class Writer(): # a tkinter window for distraction-free writing
             self.blockSytle = 0 # no blocking
 
         self.root = tk.Tk()
-        self.root.title('Writer - ' + self.fileLocation)
+        self.root.title('A_WritingProgram - ' + self.fileLocation)
 
         self.titleLabel = tk.Label(self.root, text='A_WritingProgram', font='Calibri, 24')
         self.titleLabel.pack(pady=(50, 0))
