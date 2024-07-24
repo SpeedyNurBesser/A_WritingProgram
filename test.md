@@ -6,4 +6,9 @@ I'm sorry, what are you doing exactly, Mr. SpielMitStil?
 
 I like writing stuff and I am honestly not quite sure, why I like writing stuff.
 
-**𝔹𝕠𝕝𝕕**
+Äpfel sind für Österreicher/-innen wichtig. A German sentence to find out, if the so called Umlaute (letters like ä, ö, ü) are processed correctly.
+
+It seems that this thing works again, isn't that great, Mr. SpielMitSil?
+ 
+
+

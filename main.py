@@ -140,9 +140,13 @@ class Writer(): # a tkinter window for distraction-free writing
         elif blockStyle == 2:
             self.blockSytle = 2 # blockSytle 2 blocks * until the given amount of words (blockValue) is written 
             self.blockValue = blockValue # words
-            file = open(self.fileLocation, 'r')
-            self.progressValue = -(len(re.sub(' +', ' ', file.read()).strip().split(" ")))
-            # TODO: set value to the negative inverse of the amount of given words
+
+            # sets the progress value as (the amount of words of the unedited file (old words))
+            # every time the progressBar is updated it's current value is calculated as the here defined the current number of words (i.e. newly written words and old words) - progressValue
+            # as we only want the newly written words to count as progress and we can't really filter, if a word is new or old, to get the number of new words we just subtract the number of old words from the total
+            # if we otherwise open a file with already 1000 words inside, and set our blockValue as 1000 the goal would instantly be reached
+            file = open(self.fileLocation, 'r', encoding='utf-8')
+            self.progressValue = len(re.sub(' +', ' ', file.read()).split(" "))
             file.close()
         else:
             self.blockSytle = 0 # no blocking
@@ -183,13 +187,13 @@ class Writer(): # a tkinter window for distraction-free writing
 
     def saveTextToFile(self):
         # gets the text from the textbox and saves it to the previously specified file
-        file = open(self.fileLocation, 'w')
+        file = open(self.fileLocation, 'w', encoding='utf-8')
         file.write(self.textbox.get('1.0','end'))
         file.close()
 
     def loadTextToTBox(self):
         # loads the text from the previously specified file to the textbox
-        file = open(self.fileLocation, 'r')
+        file = open(self.fileLocation, 'r', encoding='utf-8')
         self.textbox.insert('1.0', file.read())
         file.close()
 
@@ -214,7 +218,7 @@ class Writer(): # a tkinter window for distraction-free writing
 
     def updateWordBar(self):
         wordCount = len(re.sub(' +', ' ',self.textbox.get('1.0','end')).strip().split(" "))
-        value = ((self.progressValue + wordCount)/self.blockValue)
+        value = ((wordCount - self.progressValue)/self.blockValue)
         self.progressBar.config(value= value)
 
         if value >= 1.0: self.enableQuit() # enable the quit button when goal is reached 
@@ -312,7 +316,7 @@ class WriterStartup():
         
 
 if __name__ == '__main__':
-    #Writer(blockStyle=1).run()
+    #Writer(blockStyle=2, blockValue=10).run()
     WriterStartup()
     #root = tk.Tk()
 
