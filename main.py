@@ -6,6 +6,8 @@ import os
 import json
 import webbrowser
 
+ENCODING = 'utf-8'
+
 SETTINGS_FILENAME = 'settings.json' # if i for some reason happen to want to call the file "config" in the future
 
 class BetterText(tk.Text):
@@ -146,7 +148,7 @@ class Writer(): # a tkinter window for distraction-free writing
             # every time the progressBar is updated it's current value is calculated as the here defined the current number of words (i.e. newly written words and old words) - progressValue
             # as we only want the newly written words to count as progress and we can't really filter, if a word is new or old, to get the number of new words we just subtract the number of old words from the total
             # if we otherwise open a file with already 1000 words inside, and set our blockValue as 1000 the goal would instantly be reached
-            file = open(self.fileLocation, 'r', encoding='utf-8')
+            file = open(self.fileLocation, 'r', encoding=ENCODING)
             self.progressValue = len(re.sub(' +', ' ', file.read()).split(" "))
             file.close()
         else:
@@ -193,13 +195,13 @@ class Writer(): # a tkinter window for distraction-free writing
 
     def saveTextToFile(self):
         # gets the text from the textbox and saves it to the previously specified file
-        file = open(self.fileLocation, 'w', encoding='utf-8')
+        file = open(self.fileLocation, 'w', encoding=ENCODING)
         file.write(self.textbox.get('1.0','end'))
         file.close()
 
     def loadTextToTBox(self):
         # loads the text from the previously specified file to the textbox
-        file = open(self.fileLocation, 'r', encoding='utf-8')
+        file = open(self.fileLocation, 'r', encoding=ENCODING)
         self.textbox.insert('1.0', file.read())
         file.close()
 
