@@ -537,5 +537,6 @@ if __name__ == '__main__':
     # - set progressbar style ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
     # - set font
     # - typical writing features (hemingway mode, typewriter mode, etc.) (maybe that's not distraction-free / bloads the app?)
+    # - choose encoding
 
     #TODO: deactivate other monitors on multi monitor setups
