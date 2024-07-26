@@ -1,10 +1,14 @@
 import tkinter as tk
 from tkinter import filedialog as fd
 from tkinter import ttk
-from tkinter import messagebox as mb
 import re
+import os
+import json
+import webbrowser
 
-AUTOSAVE_INTERVAL = 300 # in seconds
+ENCODING = 'utf-8'
+
+SETTINGS_FILENAME = 'settings.json' # if i for some reason happen to want to call the file "config" in the future
 
 class BetterText(tk.Text):
     def __init__(self, parent, *args, **kwargs):
@@ -128,7 +132,7 @@ class BetterText(tk.Text):
             self.mark_set('insert', f'{self.index(tk.INSERT)} - {len(SYNTAX_BACK)} chars') # applies new position (between front and back Syntax) to cursor
 
 class Writer(): # a tkinter window for distraction-free writing
-    def __init__(self, blockStyle=1, blockValue=1, fileLocation='test.md') -> None:
+    def __init__(self, blockStyle=1, blockValue=1, fileLocation='test.md', autosaveInterval=300, displayHeader=True) -> None:
 
         self.fileLocation = fileLocation
 
@@ -139,18 +143,25 @@ class Writer(): # a tkinter window for distraction-free writing
         elif blockStyle == 2:
             self.blockSytle = 2 # blockSytle 2 blocks * until the given amount of words (blockValue) is written 
             self.blockValue = blockValue # words
-            file = open(self.fileLocation, 'r')
-            self.progressValue = -(len(re.sub(' +', ' ', file.read()).strip().split(" ")))
-            # TODO: set value to the negative inverse of the amount of given words
+
+            # sets the progress value as (the amount of words of the unedited file (old words))
+            # every time the progressBar is updated it's current value is calculated as the here defined the current number of words (i.e. newly written words and old words) - progressValue
+            # as we only want the newly written words to count as progress and we can't really filter, if a word is new or old, to get the number of new words we just subtract the number of old words from the total
+            # if we otherwise open a file with already 1000 words inside, and set our blockValue as 1000 the goal would instantly be reached
+            file = open(self.fileLocation, 'r', encoding=ENCODING)
+            self.progressValue = len(re.sub(' +', ' ', file.read()).split(" "))
             file.close()
         else:
             self.blockSytle = 0 # no blocking
 
         self.root = tk.Tk()
-        self.root.title('Writer - ' + self.fileLocation)
+        self.root.title('A_WritingProgram - ' + self.fileLocation)
 
-        self.titleLabel = tk.Label(self.root, text='A_WritingProgram', font='Calibri, 24')
-        self.titleLabel.pack(pady=(50, 0))
+        self.autosaveInterval = autosaveInterval * 1000
+
+        if displayHeader:
+            self.titleLabel = tk.Label(self.root, text='A_WritingProgram', font='Calibri, 24')
+            self.titleLabel.pack(pady=(50, 0))
 
         # puts the root window into a distraction-free state, if the blocking is enabled
         if self.blockSytle != 0:
@@ -180,26 +191,35 @@ class Writer(): # a tkinter window for distraction-free writing
         self.textbox.pack(fill=tk.Y, expand=True)
         self.loadTextToTBox()
 
+        self.run()
+
     def saveTextToFile(self):
         # gets the text from the textbox and saves it to the previously specified file
-        file = open(self.fileLocation, 'w')
+        file = open(self.fileLocation, 'w', encoding=ENCODING)
         file.write(self.textbox.get('1.0','end'))
         file.close()
 
     def loadTextToTBox(self):
         # loads the text from the previously specified file to the textbox
-        file = open(self.fileLocation, 'r')
+        file = open(self.fileLocation, 'r', encoding=ENCODING)
         self.textbox.insert('1.0', file.read())
         file.close()
 
     def autoSave(self):
-        self.saveTextToFile()
-        self.root.after(AUTOSAVE_INTERVAL*1000, self.autoSave)
+        print('Trying to autosave...')
+        try:
+            self.saveTextToFile()
+        except:
+            print('Autosave failed.')
+        else:
+            print('Autosave finished.')
+        finally:
+            self.root.after(self.autosaveInterval, self.autoSave)
 
     def run(self):
         if self.blockSytle == 1: self.root.after(1000, self.updateTimeBar)
         elif self.blockSytle == 2: self.root.after(1000, self.updateWordBar)
-        self.root.after(AUTOSAVE_INTERVAL*1000, self.autoSave)
+        self.root.after(self.autosaveInterval, self.autoSave)
         self.root.mainloop()
 
     def updateTimeBar(self):
@@ -213,7 +233,7 @@ class Writer(): # a tkinter window for distraction-free writing
 
     def updateWordBar(self):
         wordCount = len(re.sub(' +', ' ',self.textbox.get('1.0','end')).strip().split(" "))
-        value = ((self.progressValue + wordCount)/self.blockValue)
+        value = ((wordCount - self.progressValue)/self.blockValue)
         self.progressBar.config(value= value)
 
         if value >= 1.0: self.enableQuit() # enable the quit button when goal is reached 
@@ -227,17 +247,24 @@ class Writer(): # a tkinter window for distraction-free writing
     def enableQuit(self):
         self.quitButton.config(state= 'normal')
 
-#TODO: deactivate other monitors
-
-class WriterStartup():
+class WriterConfigurator():
     def __init__(self) -> None:
         self.root = tk.Tk()
         self.root.title('A_WritingProgram')
         self.root.geometry('525x275')
         self.root.resizable(0, 0)
 
-        # You need to select a file beforehand, create one, if you start anew: File Selection
-        fileFrame = tk.Frame(self.root)
+        self.tabControl = ttk.Notebook(self.root)
+        self.mainTab = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.mainTab, text='Main')
+        self.settingsTab = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.settingsTab, text='Settings')
+        self.aboutTab = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.aboutTab, text='About')
+        self.tabControl.pack(expand = 1, fill ="both") 
+
+        # Main Tab
+        fileFrame = tk.Frame(self.mainTab)
 
         self.fileLabel = tk.Label(fileFrame, text='You need to select a file beforehand; create one now, if you start anew: ')
         self.fileLabel.pack(pady=20, side='left')
@@ -247,11 +274,11 @@ class WriterStartup():
         selectFileButton = tk.Button(fileFrame, text='Browse', command= self.selectFile)
         selectFileButton.pack(pady=20, side='left')
 
-        fileFrame.pack(pady=20)
+        fileFrame.pack()
         ###
 
-        # Select your block frame
-        blockFrame = tk.Frame(self.root)
+        # set blockValue
+        blockFrame = tk.Frame(self.mainTab)
 
         blockLabel = tk.Label(blockFrame, text='Block everything until')
         blockLabel.pack(side='left')
@@ -265,7 +292,7 @@ class WriterStartup():
         # CheckBoxes for blockStyle
         self.blockStyle = tk.StringVar()
 
-        checkBoxFrame = tk.Frame(self.root)
+        checkBoxFrame = tk.Frame(self.mainTab)
 
         chechBoxTime = ttk.Radiobutton(checkBoxFrame, text='minutes have passed.', value=1, variable=self.blockStyle)
         chechBoxTime.pack(fill='x')
@@ -279,10 +306,75 @@ class WriterStartup():
         self.blockStyle.set(1)
 
         checkBoxFrame.pack()
-        ###
 
-        startButton = tk.Button(self.root, text='Start', command= self.startWriter)
+        startButton = tk.Button(self.mainTab, text='Start', command= self.startWriter)
         startButton.pack(pady=20)
+
+        ######
+        # Settings Tab
+
+        settingsNote = tk.Label(self.settingsTab, text="You can't change any settings while writing (that would be a distraction).") 
+        settingsNote.pack(pady=20)
+
+        settingsFrame = tk.Frame(self.settingsTab)
+
+        autosaveFrame = tk.Frame(settingsFrame)
+        autosaveLabel = tk.Label(autosaveFrame, text='Interval for Autosaves:')
+        autosaveLabel.pack(side=tk.LEFT)
+        self.autosaveIntervalEntry = tk.Entry(autosaveFrame)
+        self.autosaveIntervalEntry.pack(side=tk.LEFT)
+        autosaveUnit = tk.Label(autosaveFrame, text='seconds')
+        autosaveUnit.pack(side=tk.LEFT)
+        autosaveFrame.pack(fill='x')
+
+        self.headerVar = tk.IntVar()
+        self.headerCheckbox = ttk.Checkbutton(settingsFrame, text='Show "A_WritingProgram" header', variable=self.headerVar)
+        self.headerCheckbox.pack(pady=10, fill='x')
+
+        settingsFrame.pack()
+
+        self.errorLabel = tk.Label(self.settingsTab, fg='#ff3333', text='')
+        self.errorLabel.pack(pady=20)
+
+        self.loadSettingsFromFile()
+
+
+        buttonFrame = tk.Frame(self.settingsTab)
+
+        applySettingsButton = tk.Button(buttonFrame, text='Apply', command=self.applySettings)
+        applySettingsButton.pack(side=tk.LEFT, padx=25)
+
+        saveSettingsButton = tk.Button(buttonFrame, text='Apply & Save', command=self.applyAndSaveSettings)
+        saveSettingsButton.pack(side=tk.LEFT, padx=25)
+
+        buttonFrame.pack()
+
+        ##############
+        # About Tab
+
+        aboutLabel1 = tk.Label(self.aboutTab, text="A_WritingProgram is a portable, distraction-free software for writing (i.e. a writing program).")
+        aboutLabel1.pack(padx=10, pady=20,anchor='w')
+
+        aboutLabel2 = tk.Label(self.aboutTab, text="I put it together on a couple of free afternoons (that sometimes dragged on till 4AM).")
+        aboutLabel2.pack(padx=10, pady=0,anchor='w')
+
+        aboutLabel3 = tk.Label(self.aboutTab, text="Why? Just because. I kinda like doing stuff. If you find this useful, use it.")
+        aboutLabel3.pack(padx=10, pady=0,anchor='w')
+
+        aboutLabel4 = tk.Label(self.aboutTab, text="Anyway, bye...\n- Ole370")
+        aboutLabel4.pack(padx=10, pady=10,anchor='w')
+
+        aboutSeparator = ttk.Separator(self.aboutTab, orient='horizontal')
+        aboutSeparator.pack(fill='x')
+
+        projectLink = tk.Label(self.aboutTab, text="GitHub Project", fg="#3066DD", cursor="hand2")
+        projectLink.pack(padx=10, pady=10,anchor='w')
+        projectLink.bind("<Button-1>", lambda e: webbrowser.open_new("https://github.com/SpeedyNurBesser/A_WritingProgram"))
+
+
+        aboutLabel5 = tk.Label(self.aboutTab, text="(P.S. You can star the GitHub Project if you like.)")
+        aboutLabel5.pack(padx=10, pady=10,anchor='w')
+
 
         self.root.mainloop()
     
@@ -301,24 +393,149 @@ class WriterStartup():
 
         self.fileLabel.config(text=self.filename, fg='#000000')
 
-    def startWriter(self):
-        if self.filename != '':
-            writer = Writer(fileLocation= self.filename, blockStyle= int(self.blockStyle.get()), blockValue= int(self.blockValue.get()))
-            writer.run()
-            self.root.destroy()
-        else:
+    def inputIsValid(self):
+        if self.filename == '':
             self.fileLabel.config(text='You need to select a file!', fg='#ff3333')
+            return False
         
+        blockValue  = self.blockValue.get()
+
+        if blockValue == '':
+            self.fileLabel.config(text='''"Block everything until..." can't be empty!''', fg='#ff3333')
+            return False
+        
+        try:
+            blockValue = int(blockValue)
+        except:
+            self.fileLabel.config(text='''"Block everything until..." must be an integer!''', fg='#ff3333')
+            return False
+        
+        if blockValue <= 0:
+            self.fileLabel.config(text='''"Block everything until..." can't be zero or lower!''', fg='#ff3333')
+            return False
+        
+        return True
+
+    def startWriter(self):
+        # Everyone loves GuardClauses!
+        if not self.inputIsValid():
+            return
+        
+        writer = Writer(
+            fileLocation= self.filename,
+            blockStyle= int(self.blockStyle.get()),
+            blockValue= int(self.blockValue.get()),
+            autosaveInterval= self.autosaveInterval,
+            displayHeader= self.displayHeader
+            )
+    
+    def setDefaultSettings(self):
+        # defaultSettings
+        self.headerVar.set(1)
+        self.autosaveIntervalEntry.delete(0, 'end')
+        self.autosaveIntervalEntry.insert(1, '300')
+        self.applySettings()
+
+    def loadSettingsFromFile(self):
+        #directory = os.path.dirname(os.path.abspath(__file__))
+        #directory = directory + '\settings.json'
+
+        # I'm a bit more caucious than usually
+        if os.path.exists(SETTINGS_FILENAME):
+            try:
+                file = open(SETTINGS_FILENAME, 'r')
+            except:
+                print(f'Could not open "{SETTINGS_FILENAME}"; loading default settings.')
+                self.setDefaultSettings()
+                return None
+
+            try:
+                settings = json.load(file)
+            except:
+                print(f'Could not load "{SETTINGS_FILENAME}"; loading default settings instead.')
+                self.setDefaultSettings()
+            else:
+                try:
+                    self.autosaveIntervalEntry.insert(1, settings["autosaveInterval"])
+                    if settings["displayHeader"]:
+                        self.headerVar.set(1)
+                    else:
+                        self.headerVar.set(0)
+                    self.applySettings()
+                except:
+                    print(f'"{SETTINGS_FILENAME}" seems to be not initialized correctly; loading default settings instead.')
+                    self.setDefaultSettings()
+            finally:
+                    file.close()
+     
+        else:
+            print('No settings found, loading default settings.')
+            self.setDefaultSettings()
+
+    def settingsAreValid(self):
+        # a checkbutton can't be un-valid
+        # a entry, however, can be
+        value = self.autosaveIntervalEntry.get()
+
+        if value == '':
+            self.errorLabel.config(text='''"Interval for Autosaves..." can't be empty!''', fg='#ff3333')
+            return False
+        
+        try:
+            value = int(value)
+        except:
+            self.errorLabel.config(text='''"Interval for Autosaves..." must be an integer!''', fg='#ff3333')
+            return False
+
+        
+        if value <= 0:
+            self.errorLabel.config(text='''"Interval for Autosaves..." can't be zero or lower!''', fg='#ff3333')
+            return False
+        
+        self.errorLabel.config(text='', fg='#ff3333')
+        return True
+
+    def writeSettingsToFile(self):
+        if not self.settingsAreValid():
+            return
+
+        try:
+            file = open(SETTINGS_FILENAME, "w")
+        except:
+            self.errorLabel.config(text=f'Could not open {SETTINGS_FILENAME}!', fg='#ff3333')
+            return
+        else:
+            settingDict = {"displayHeader": bool(self.headerVar.get()), "autosaveInterval": int(self.autosaveIntervalEntry.get())}
+            settingDict = json.dumps(settingDict)
+
+            try:
+                file.write(settingDict)
+            except:
+                self.errorLabel.config(text=f'Could not write to {SETTINGS_FILENAME}!', fg='#ff3333')
+                return
+        finally:
+            file.close()
+
+    def applySettings(self):
+        # sets the real settings var that will be parsed as parameters to equal the user input
+        if not self.settingsAreValid():
+            return
+        
+        self.autosaveInterval = int(self.autosaveIntervalEntry.get())
+        self.displayHeader = bool(self.headerVar.get())
+
+    def applyAndSaveSettings(self):
+        self.writeSettingsToFile()
+        self.applySettings()
 
 if __name__ == '__main__':
-    #Writer(blockStyle=1).run()
-    WriterStartup()
-    #root = tk.Tk()
+    WriterConfigurator()
 
-    #root.geometry('500x300')
-    
+    #TODO: possible future settings:
+    # - dark mode (i like #272D2D)
+    # - initial directory for file search
+    # - set progressbar style ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
+    # - set font
+    # - typical writing features (hemingway mode, typewriter mode, etc.) (maybe that's not distraction-free / bloads the app?)
 
-    #text = BetterText(root, wrap='word', font=('Times New Roman', 16), width=90)
-    #text.pack()
-
-    #root.mainloop()
+    #TODO: deactivate other monitors on multi monitor setups
