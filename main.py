@@ -429,7 +429,7 @@ class WriterConfigurator():
     
     def setDefaultSettings(self):
         # defaultSettings
-        self.headerVar = True
+        self.headerVar.set(1)
         self.autosaveIntervalEntry.delete(0, 'end')
         self.autosaveIntervalEntry.insert(1, '300')
         self.applySettings()
